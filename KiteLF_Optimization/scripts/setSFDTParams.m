@@ -1,0 +1,11 @@
+SFDTParams.eff_fuse = 0.9;
+SFDTParams.Fthkmax = 0.5;
+SFDTParams.x_1 = 0.4;SFDTParams.x_2 = 0.3;SFDTParams.x_W = 0.45;
+SFDTParams.C_Hstab = 0.5;
+SFDTParams.FOS = 2.5;
+SFDTParams.S_yield = 270000000.0;
+SFDTParams.Int_P = 100000.0;
+SFDTParams.Ext_P = 220000.0;
+SFDTParams.Dyn_P = 50000.0;
+SFDTParams.effV = 0.85;
+SFDTParams.rho = 1000;
