@@ -1,0 +1,1 @@
+[mFuse, mWing, Power, LCOEBest, CLCD, uopt]=ParallelXY(1)
