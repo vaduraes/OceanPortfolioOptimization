@@ -33,10 +33,25 @@ def compute_distance(latlong1, latlong2):
     distances = r * c
     
     return distances
-
+#latlong1: Transmission
+#latlong2: Devices
 def GetIdxOutRadious(latlong1, latlong2,Radious):
     IdxOut=[]
     for i in range(latlong1.shape[0]):
         D=compute_distance(latlong1[i,:], latlong2)
         IdxOut.append(np.where(D>=Radious)[0])
     return IdxOut
+
+#Which turbines are inside the radious of the tranmission system
+def GetIdxInRadious(latlong1, latlong2,Radious):
+    IdxOut=[]
+    for i in range(latlong1.shape[0]):
+        D=compute_distance(latlong1[i,:], latlong2)
+        IdxOut.append(np.where(D<=Radious)[0])
+    return IdxOut
+
+
+def GetIdxInRadious_V1(latlong1, latlong2,Radious):
+    IdxIn=[]
+    D=compute_distance(latlong1, latlong2)
+    return np.where(D<=Radious)[0]

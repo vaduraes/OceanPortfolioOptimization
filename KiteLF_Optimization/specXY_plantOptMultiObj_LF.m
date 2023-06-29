@@ -13,8 +13,8 @@ clc
 
 %% Specify site index
 
-xInd = 5;
-yInd = 2;
+xInd = 45;
+yInd = 35;
 
 xSite = [xInd yInd];
 
