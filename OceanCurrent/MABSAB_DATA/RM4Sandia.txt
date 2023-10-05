@@ -1,0 +1,18 @@
+Turbine model RM4 from Sandia; acess in https://energy.sandia.gov/energy/renewable-energy/water-power/technology-development/reference-model-project-rmp/
+Power equation from- 2.3.1.1 Performance Analysis and AEP Estimation, of the reference above
+
+Rotor Depth [m], 50
+Number of turbines per set, 4
+Capacity per set of turbines [W], 4e6
+Rotor diameter [m], 45
+Coeficient of performance, 0.48533389
+1-Gearbox Efficiency, 0.96
+2-Generator Efficiency, 0.98
+3-Transformer Efficiency, 0.98
+4-Power Inverter Efficiency, 0.98
+Combined power chain conversion efficiency (1~4), 0.90354432
+Availability Factor, 0.95,
+34kv Transmission Efficiency, 0.98,
+Minimum Depth,100
+Maximum Depth,2500
+Water Density [kg/m³], 1030

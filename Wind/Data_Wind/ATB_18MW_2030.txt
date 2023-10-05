@@ -1,0 +1,36 @@
+Hub Height; 161
+System Efficiency (Availability+Transmission+Collection, from NREL); 0.158
+Rotor Diameter; 263
+Rated Power W; 18e6
+Wind Speed (m/s);Turbine Output (p.u)
+0;0
+1;0
+2;0
+3;0
+4;0.048
+5;0.082666667
+6;0.151555556
+7;0.254666667
+8;0.392055556
+9;0.563666667
+10;0.769555556
+11;1
+12;1
+13;1
+14;1
+15;1
+16;1
+17;1
+18;1
+19;1
+20;1
+21;1
+22;1
+23;1
+24;1
+25;1
+26;0
+27;0
+28;0
+29;0
+30;0
