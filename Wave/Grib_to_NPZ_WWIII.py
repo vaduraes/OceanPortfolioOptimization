@@ -1,5 +1,6 @@
 #Read Grib2 File from WWIII (Run on LINUX or MAC because of pygrib)
 #Still needs to treat missing values
+#Py37
 
 import numpy as np
 import pygrib
@@ -9,17 +10,17 @@ from datetime import timedelta
 from dateutil.relativedelta import relativedelta
 
 
-file="WWW3Data/multi_1.at_4m.hs.200502.grb2"
+file="./WWW3Data/multi_1.at_4m.hs.200502.grb2"
 grb = pygrib.open(file)
 Grb_Lat=grb[1]['latitudes']
 Grb_Long=grb[1]['longitudes']
 grb.close()
 
-LatMax=36.7
-LatMin=33.7
+LatMax=37
+LatMin=33
 
-LongMax=-74.5+360
-LongMin=-78.7+360
+LongMax=-73+360
+LongMin=-79+360
 
 #1st filter for valid lat long values
 ValidLatIdx=(Grb_Lat<=LatMax)*(Grb_Lat>=LatMin)

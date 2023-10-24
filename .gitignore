@@ -21,3 +21,5 @@ Wind_AE/WindEnergyNREL_100m_Haliade150_6MW.npz
 *.shx
 *.mat
 *.nc
+*.grb2
+*.MD5
