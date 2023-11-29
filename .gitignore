@@ -1,7 +1,3 @@
-KiteLF_Optimization/DataSetPlatform.mat
-KiteLF_Optimization/DataSetSeabed.mat
-KiteLF_Optimization/functions/DataSet1.mat
-Wind_AE/WindEnergyNREL_100m_Haliade150_6MW.npz
 *.png
 *.sqlite
 *.pyc
@@ -12,7 +8,6 @@ Wind_AE/WindEnergyNREL_100m_Haliade150_6MW.npz
 ~$*
 *tmp
 *.dat
-*.npz
 *.shp
 *.cpg
 *.dbf
@@ -23,3 +18,20 @@ Wind_AE/WindEnergyNREL_100m_Haliade150_6MW.npz
 *.nc
 *.grb2
 *.MD5
+.vscode/*
+.ipynb_checkpoints
+__pycache__/
+*.npz
+*.qpj
+
+#Reference papers
+References/ 
+
+#Data
+KiteLF_Optimization/DataSetPlatform.mat
+KiteLF_Optimization/DataSetSeabed.mat
+KiteLF_Optimization/functions/DataSet1.mat
+Wind_AE/WindEnergyNREL_100m_Haliade150_6MW.npz
+
+#Delete
+Organize/
