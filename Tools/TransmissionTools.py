@@ -9,13 +9,14 @@ from GeneralGeoTools import GetDistanceToShore, GetDepth
 
 #Tools to compute relevant transmission data
 
-def TL_PowerParam_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation):
+def TL_PowerParam_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation, AddExtraCable=0):
     #Determined power parameters for a transmission line and admitance (AC Configuration)
     
     #Params:
     #D_SL: Distance from the shore to the wind farm [km]
     #AC_CableData: Excel table with AC cable data
     #idxCable: Index of the cable you are investigating
+    #AddExtraCable: Force the addition of and extra cable to the transmission line
     
     LineLength=D_SL*1.2# Line length [km], considered 120% of shore distance
     V=AC_CableData['Voltage [KV]'][idxCable]
@@ -45,12 +46,12 @@ def TL_PowerParam_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation):
         if  RatedPower_Generation<=P_LT:
             NumConductors=1
 
+        NumConductors=NumConductors+AddExtraCable
+        
         S_LT=Max_MVA*NumConductors # Total power capacity of the line [MVA]
         P_LT=P_LT*NumConductors    # Total power capacity of the line [MW]
     
-    
     Total_Q=Q*NumConductors #Total reactive power requirements [MVar]
-    
     
     #P_LT: Max active power possible to transmit (Sum of all conductors) [MW]
     #S_LT: Max power capacity of the line (Sum of all conductors) [MVA]
@@ -94,7 +95,7 @@ def TL_Efficiency_AC(AC_CableData, idxCable, NumConductors, D_SL, RatedPower_Gen
     return EfficiencyAC, LossesAC
 
 
-def TL_AnnualizedCost_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation):
+def TL_AnnualizedCost_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation, AddExtraCable=0):
     #Determined the annualized cost of a transmission line (AC Configuration)
     
     #Params:
@@ -107,7 +108,7 @@ def TL_AnnualizedCost_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation):
     LineLength=D_SL*1.2# Line length [km], considered 120% of shore distance
     
     
-    P_LT, S_LT, Total_Q, NumConductors, Y=TL_PowerParam_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation)
+    P_LT, S_LT, Total_Q, NumConductors, Y=TL_PowerParam_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation, AddExtraCable=AddExtraCable)
     
     Cost_PC=AC_CableData['Cable Cost [$/m]'][idxCable]*10**-3 #Cost per conductor [M$/km]
     
@@ -165,7 +166,7 @@ def TL_Efficiency_DC(DC_CableData, idxCable, NumConductors, D_SL, RatedPower_Gen
     return EfficiencyDC
 
    
-def TL_AnnualizedCost_DC(DC_CableData, idxCable, D_SL, RatedPower_Generation):
+def TL_AnnualizedCost_DC(DC_CableData, idxCable, D_SL, RatedPower_Generation, AddExtraCable=0):
     #Determined the annualized cost of a transmission line (DC Configuration)
     
     #Params:
@@ -185,7 +186,7 @@ def TL_AnnualizedCost_DC(DC_CableData, idxCable, D_SL, RatedPower_Generation):
     Max_MVA=DC_CableData["MVA Capacity"][idxCable]
     CableCostDC=DC_CableData['Cable Cost [$/m]'][idxCable]*10**-3
     
-    NumConductors=np.ceil(RatedPower_Generation/Max_MVA)
+    NumConductors=np.ceil(RatedPower_Generation/Max_MVA)+AddExtraCable
     
     OPPC_DC=32.75 + 0.07205*S_LT #Platform and plant cost HVDC [M$]
     OPC_DC=0.1067*S_LT # Onshore plant cost [M$]
@@ -204,7 +205,7 @@ def TL_AnnualizedCost_DC(DC_CableData, idxCable, D_SL, RatedPower_Generation):
 
 
 
-def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Generation, LatMaxMin=(33.5, 37), LongMaxMin=(-78.5, -74.5), StepsPerDegree=10, SavePath=None):
+def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Generation, LatMaxMin=(33.5, 37), LongMaxMin=(-78.5, -74.5), StepsPerDegree=10, SavePath=None, FixToCopper=False):
     #StepsPerDegree: Number of possible locations per degree of latitude and longitude
     #LatMaxMin: Maximum and Minimum Latitude
     #LongMaxMin: Maximum and Minimum Longitude
@@ -212,6 +213,10 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
     
     AC_CableData = pd.read_excel(AC_DataPath)
     DC_CableData = pd.read_excel(DC_DataPath)
+    
+    if FixToCopper:
+        #Fix to copper
+        AC_CableData=AC_CableData.loc[AC_CableData["Observations"]=="Copper",:]
     
     #Create Grid of Latitudes and Longitudes for the center of energy colection of the transmission system   
     lat_min=LatMaxMin[0]-0.1
@@ -255,9 +260,12 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
         MinCost=-1
         Mode=-1
         Tmp_NumConductors=-1
+        
+        #AC Transmission
+        #Run with minimum number of conductors
         for idxCable in range(len(AC_CableData)):
             
-            AnnualizedCost_AC, NumConductors, EfficiencyAC=TL_AnnualizedCost_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation)
+            AnnualizedCost_AC, NumConductors, EfficiencyAC = TL_AnnualizedCost_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation)
 
             
             if AnnualizedCost_AC!=-1:
@@ -273,8 +281,29 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
                     Best_Efficiency=EfficiencyAC
                     Mode="HVAC"
                     Tmp_NumConductors=NumConductors
-
-    # DC Transmission
+                    
+        #Run with minimum number of conductors + 1
+        for idxCable in range(len(AC_CableData)):
+            
+            AnnualizedCost_AC, NumConductors, EfficiencyAC=TL_AnnualizedCost_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation, AddExtraCable=1)
+            
+            if AnnualizedCost_AC!=-1:
+                
+                #Find the cost of the transmission line taking into account the cost of enegy losses priced at 83$/MWh
+                CostWithLoses=AnnualizedCost_AC*10**6 + 83*RatedPower_Generation*0.5*8760*(1-EfficiencyAC) #83$ from https://atb.nrel.gov/electricity/2022/offshore_wind
+            
+                if MinEstimateCostWithLoss>CostWithLoses :
+                    MinEstimateCostWithLoss=CostWithLoses
+                    
+                    MinCost=AnnualizedCost_AC
+                    BestCable=idxCable
+                    Best_Efficiency=EfficiencyAC
+                    Mode="HVAC"
+                    Tmp_NumConductors=NumConductors
+                    
+                    
+        #DC Transmission
+        #Run with minimum number of conductors
         for idxCable in range(len(DC_CableData)):
             AnnualizedCost_DC, NumConductors, EfficiencyDC=TL_AnnualizedCost_DC(DC_CableData, idxCable, D_SL, RatedPower_Generation)
             
@@ -291,6 +320,24 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
                     Mode="HVDC"
                     Tmp_NumConductors=NumConductors
         
+        #Run with minimum number of conductors +1
+        for idxCable in range(len(DC_CableData)):
+            AnnualizedCost_DC, NumConductors, EfficiencyDC=TL_AnnualizedCost_DC(DC_CableData, idxCable, D_SL, RatedPower_Generation, AddExtraCable=1)
+            
+
+            if AnnualizedCost_DC!=-1:
+                CostWithLoses=AnnualizedCost_DC*10**6 + 83*RatedPower_Generation*0.5*8760*(1-EfficiencyDC) #83$ from https://atb.nrel.gov/electricity/2022/offshore_wind
+            
+                if MinEstimateCostWithLoss>CostWithLoses :
+                    MinEstimateCostWithLoss=CostWithLoses
+                    
+                    MinCost=AnnualizedCost_DC
+                    BestCable=idxCable
+                    Best_Efficiency=EfficiencyDC
+                    Mode="HVDC"
+                    Tmp_NumConductors=NumConductors
+        
+        
         S_BestCable.append(BestCable)
         S_BestAnnualizedCost.append(MinCost)
         S_Efficiency.append(Best_Efficiency)
@@ -303,8 +350,10 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
     S_Efficiency=np.array(S_Efficiency)
     S_Mode=np.array(S_Mode)
     S_NumConductors=np.array(S_NumConductors)
-    LCOE_SimpleApproximation=S_BestACost*10**6/(RatedPower_Generation*0.5*8760*S_Efficiency) # LCOE assuming a CF of 0.5 #[$/MWh*year]    
-        
+    
+    # LCOE_SimpleApproximation=S_BestACost*10**6/(RatedPower_Generation*0.5*8760*S_Efficiency) # LCOE assuming a CF of 0.5 #[$/MWh*year]    
+    LCOE_SimpleApproximation=(S_BestACost*10**6 + 83*RatedPower_Generation*0.5*8760*(1-S_Efficiency))/(RatedPower_Generation*0.5*8760) # LCOE assuming a CF of 0.5 #[$/MWh*year]    
+     
     #Remove LatLong points that do not have a feasible transmission line
     #Maximum deph of 2500 m is also considered
     FilterIdx=(S_BestCable!=-1) * (TL_Depth<2500)
