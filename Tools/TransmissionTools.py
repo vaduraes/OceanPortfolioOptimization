@@ -227,8 +227,8 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
     xlim =[lon_min,lon_max]
     ylim =[lat_min, lat_max]
 
-    lat_range = np.linspace(lat_min, lat_max,int((lat_max-lat_min)*10))
-    lon_range = np.linspace(lon_min, lon_max, int((lon_max-lon_min)*10))
+    lat_range = np.linspace(lat_min, lat_max,int((lat_max-lat_min)*StepsPerDegree))
+    lon_range = np.linspace(lon_min, lon_max, int((lon_max-lon_min)*StepsPerDegree))
             
     TL_LatLong = np.array(np.meshgrid(lat_range,lon_range)).T.reshape(-1, 2)
     
@@ -237,7 +237,7 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
     ShoreDistance=GetDistanceToShore(InputDataPath, TL_LatLong)
     Depth=GetDepth(InputDataPath, TL_LatLong)
 
-    IdxFeasibleSites=(Depth>9)*(ShoreDistance>2)# Keep only sites with depth greater than 9 m and distance to shore greater than 2 km
+    IdxFeasibleSites=(Depth>5)*(ShoreDistance>10)*(Depth<=2500)# Keep only sites with depth greater than 9 m and distance to shore greater than 2 km
 
     #Filter sites
     TL_LatLong=TL_LatLong[IdxFeasibleSites,:]
