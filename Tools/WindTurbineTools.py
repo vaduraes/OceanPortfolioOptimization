@@ -50,7 +50,7 @@ def FilterOnDepthShoreDistance(Depth, DistanceShore, DepthMinMax, DistanceShoreM
     return IdxIn
 
 #Convert wind speed to energy in pu
-def WindToEnergy(InputDataPath, WindTurbine, WindSpeedHeightsAvailable, SavePath=None):
+def WindToEnergy(InputDataPath, WindTurbine, WindSpeedHeightsAvailable, ResolutionKm=2, SavePath=None):
        
     HubHeight, Total_Efficiency, RotorDiameter, PowerCurve, RatedPower=GetTurbineData(InputDataPath, WindTurbine)
 
@@ -115,14 +115,14 @@ def WindToEnergy(InputDataPath, WindTurbine, WindSpeedHeightsAvailable, SavePath
     
     if SavePath!=None:
         np.savez(SavePath, ReadMe=ReadMe, Energy_pu=WindEnergy_pu.astype(np.float16), RatedPower=RatedPower, LatLong=LatLong.astype(np.float32), Depth=Depth,\
-            DistanceShore=DistanceShore.astype(np.float32),RawResource=WS_Hub.astype(np.float16),TimeList=TimeList )
+            DistanceShore=DistanceShore.astype(np.float32),RawResource=WS_Hub.astype(np.float16),TimeList=TimeList,ResolutionKm=ResolutionKm )
         
 
-    return WindEnergy_pu, RatedPower, LatLong, WS_Hub, Depth, DistanceShore, TimeList
+    return WindEnergy_pu, RatedPower, LatLong, WS_Hub, Depth, DistanceShore, TimeList, ResolutionKm
 
 def GetCostAndGenerationWindTurbine(InputDataPath, WindCostPath, WindTurbine, WindSpeedHeightsAvailable, SavePath=None):
 
-    WindEnergy_pu, RatedPower, LatLong, WS_Hub, Depth, DistanceShore, TimeList=WindToEnergy(InputDataPath, WindTurbine, WindSpeedHeightsAvailable, SavePath=None)
+    WindEnergy_pu, RatedPower, LatLong, WS_Hub, Depth, DistanceShore, TimeList, ResolutionKm=WindToEnergy(InputDataPath, WindTurbine, WindSpeedHeightsAvailable,ResolutionKm=2, SavePath=None)
         
     #Read EXCEL data and get NREL information
     CAPEX=pd.read_excel(WindCostPath,sheet_name="CAPEX")
@@ -179,7 +179,8 @@ def GetCostAndGenerationWindTurbine(InputDataPath, WindCostPath, WindTurbine, Wi
     if SavePath!=None:
         np.savez(SavePath, ReadMe=ReadMe, Energy_pu=WindEnergy_pu.astype(np.float16), RatedPower=RatedPower, LatLong=LatLong.astype(np.float32), Depth=Depth,\
             DistanceShore=DistanceShore.astype(np.float16), TRG_site=TRG_site, CAPEX_site=CAPEX_site.astype(np.float16), OPEX_site=OPEX_site.astype(np.float16),\
-                AnnualizedCost=AnnualizedCost.astype(np.float16), RawResource=WS_Hub.astype(np.float16), TimeList=TimeList, NumberOfCellsPerSite=NumberOfCellsPerSite )
+                AnnualizedCost=AnnualizedCost.astype(np.float16), RawResource=WS_Hub.astype(np.float16), TimeList=TimeList, NumberOfCellsPerSite=NumberOfCellsPerSite,
+                ResolutionKm=ResolutionKm, ResolutionDegrees=-1)
         
     return WindEnergy_pu, RatedPower, LatLong, WS_Hub, Depth, DistanceShore, TRG_site, CAPEX_site, OPEX_site, AnnualizedCost, TimeList, NumberOfCellsPerSite
 
@@ -200,6 +201,9 @@ def FilterForWTKDataset(ReferenceDataPath, WTKPath, SavePath=None):
     CAPEX_site=Data["CAPEX_site"]
     OPEX_site=Data["OPEX_site"]
     AnnualizedCost=Data["AnnualizedCost"]
+    ResolutionDegrees=Data["ResolutionDegrees"]
+    ResolutionKm=Data["ResolutionKm"]
+    
 
 
     #def FilterUsingWTKSites(WTKPath):  
@@ -249,7 +253,8 @@ def FilterForWTKDataset(ReferenceDataPath, WTKPath, SavePath=None):
     if SavePath!=None:
         np.savez(SavePath,  Energy_pu=Energy_Pu.astype(np.float16), RatedPower=RatedPower, LatLong=LatLong.astype(np.float32), Depth=Depth,\
             DistanceShore=DistanceShore.astype(np.float16), CAPEX_site=CAPEX_site.astype(np.float16), OPEX_site=OPEX_site.astype(np.float16),\
-                AnnualizedCost=AnnualizedCost.astype(np.float16), RawResource=RawResource.astype(np.float16), TimeList=TimeList, NumberOfCellsPerSite=NumberOfCellsPerSite )
+                AnnualizedCost=AnnualizedCost.astype(np.float16), RawResource=RawResource.astype(np.float16), TimeList=TimeList, NumberOfCellsPerSite=NumberOfCellsPerSite,
+                ResolutionDegrees=ResolutionDegrees, ResolutionKm=ResolutionKm)
     
     return DataDir
 
@@ -269,6 +274,8 @@ def FilterForBOEM(ReferenceDataPath, PathBOEMData,BOEM_ShpDir, SavePath=None):
     CAPEX_site=Data["CAPEX_site"]
     OPEX_site=Data["OPEX_site"]
     AnnualizedCost=Data["AnnualizedCost"]
+    ResolutionDegrees=Data["ResolutionDegrees"]
+    ResolutionKm=Data["ResolutionKm"]
 
     SHP_WindLease = gpd.read_file(PathBOEMData+BOEM_ShpDir["Wind Lease Areas"])
     SHP_WindPlanning = gpd.read_file(PathBOEMData+BOEM_ShpDir["Wind Planning Areas"])
@@ -333,7 +340,8 @@ def FilterForBOEM(ReferenceDataPath, PathBOEMData,BOEM_ShpDir, SavePath=None):
     if SavePath!=None:
         np.savez(SavePath,  Energy_pu=Energy_Pu.astype(np.float16), RatedPower=RatedPower, LatLong=LatLong.astype(np.float32), Depth=Depth,\
             DistanceShore=DistanceShore.astype(np.float16), CAPEX_site=CAPEX_site.astype(np.float16), OPEX_site=OPEX_site.astype(np.float16),\
-                AnnualizedCost=AnnualizedCost.astype(np.float16), RawResource=RawResource.astype(np.float16), TimeList=TimeList, NumberOfCellsPerSite=NumberOfCellsPerSite, Code_BOEM=Code_BOEM)
+                AnnualizedCost=AnnualizedCost.astype(np.float16), RawResource=RawResource.astype(np.float16), TimeList=TimeList, NumberOfCellsPerSite=NumberOfCellsPerSite, Code_BOEM=Code_BOEM,
+                ResolutionDegrees=ResolutionDegrees, ResolutionKm=ResolutionKm)
         
     return DataDir
 

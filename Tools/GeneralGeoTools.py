@@ -245,7 +245,7 @@ def ChangeTimeSpaceResolution(ReferenceDataPath, CurrentTimeResolution, NewTimeR
 
     Energy_Pu=Data["Energy_pu"]
     RawResource=Data["RawResource"]
-
+    RatedPower=Data["RatedPower"]
     TimeList=Data["TimeList"]
     LatLong=Data["LatLong"]
     Depth=Data["Depth"]
@@ -269,6 +269,8 @@ def ChangeTimeSpaceResolution(ReferenceDataPath, CurrentTimeResolution, NewTimeR
 
     #######--------- Change Spatial Resolution
     #Create Grid of Latitudes and Longitudes   
+    ResolutionDegrees=1/StepsPerDegree
+    
     lat_min=np.min(LatLong[:,0])-1/StepsPerDegree
     lat_max=np.max(LatLong[:,0])+1/StepsPerDegree
     lon_min=np.min(LatLong[:,1])-1/StepsPerDegree
@@ -297,7 +299,8 @@ def ChangeTimeSpaceResolution(ReferenceDataPath, CurrentTimeResolution, NewTimeR
             if np.sum(IdxIn)>0:
                 NewEnergy_Pu_TimeSpace.append(np.average(NewEnergy_Pu_time[:,IdxIn],axis=1))
                 NewRawResource_TimeSpace.append(np.average(NewRawResource_time[:,IdxIn],axis=1))
-                NewLatLong.append([np.average(LatLong[IdxIn,0]),np.average(LatLong[IdxIn,1])])
+                #NewLatLong.append([np.average(LatLong[IdxIn,0]),np.average(LatLong[IdxIn,1])])
+                NewLatLong.append([lat+1/StepsPerDegree*0.5,long + 1/StepsPerDegree*0.5])#Center of the cell
                 NewDepth.append(np.average(Depth[IdxIn]))
                 NewDistanceShore.append(np.average(DistanceShore[IdxIn]))
                 NewCAPEX_site.append(np.average(CAPEX_site[IdxIn]))
@@ -317,9 +320,11 @@ def ChangeTimeSpaceResolution(ReferenceDataPath, CurrentTimeResolution, NewTimeR
 
     if NewSavePath!=None:
         np.savez(NewSavePath, Energy_pu=NewEnergy_Pu_TimeSpace, RawResource=NewRawResource_TimeSpace, TimeList=NewTimeList, LatLong=NewLatLong, Depth=NewDepth,\
-            DistanceShore=NewDistanceShore, CAPEX_site=NewCAPEX_site, OPEX_site=NewOPEX_site, AnnualizedCost=NewAnnualizedCost, NumberOfCellsPerSite=NumberOfCellsPerSite)
+            DistanceShore=NewDistanceShore, CAPEX_site=NewCAPEX_site, OPEX_site=NewOPEX_site, AnnualizedCost=NewAnnualizedCost, NumberOfCellsPerSite=NumberOfCellsPerSite,RatedPower=RatedPower, 
+            ResolutionDegrees=ResolutionDegrees, ResolutionKm=-1)
 
-    return NewEnergy_Pu_TimeSpace, NewTimeList, NewRawResource_TimeSpace, NewLatLong, NewDepth, NewDistanceShore, NewCAPEX_site, NewOPEX_site, NewAnnualizedCost, NumberOfCellsPerSite
+    return NewEnergy_Pu_TimeSpace, NewTimeList, NewRawResource_TimeSpace, NewLatLong, NewDepth, NewDistanceShore, NewCAPEX_site, NewOPEX_site, NewAnnualizedCost, NumberOfCellsPerSite, RatedPower
+  
 
 #Compute minimum distance from set of points
 #Index from SetPoints1 that is closest to SetPoints2 element by element

@@ -133,8 +133,8 @@ def TL_AnnualizedCost_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation, Ad
         AnnualizedCost_AC=-1
         EfficiencyAC=-1
     
-    
-    return AnnualizedCost_AC, NumConductors, EfficiencyAC
+    MaxActivePower=P_LT #MW
+    return AnnualizedCost_AC, NumConductors, EfficiencyAC, MaxActivePower
 
 def TL_Efficiency_DC(DC_CableData, idxCable, NumConductors, D_SL, RatedPower_Generation, CF=0.5):
     #Compute Efficiency of the DC transmission line
@@ -163,7 +163,8 @@ def TL_Efficiency_DC(DC_CableData, idxCable, NumConductors, D_SL, RatedPower_Gen
     EfficiencyDC=1-LossesDC/(S_LT)
     
     #EfficiencyAC: Efficiency of the transmission line [EnergyOut/EnergyIn]
-    return EfficiencyDC
+    MaxActivePower=Max_MVA*NumConductors #Max input active power on the transmission system [MW]
+    return EfficiencyDC, MaxActivePower
 
    
 def TL_AnnualizedCost_DC(DC_CableData, idxCable, D_SL, RatedPower_Generation, AddExtraCable=0):
@@ -199,9 +200,9 @@ def TL_AnnualizedCost_DC(DC_CableData, idxCable, D_SL, RatedPower_Generation, Ad
     
     AnnualizedCost_DC=FCR*CAPEX_DC + OPEX_DC# Anualized transmission costs [M$/year]
     
-    EfficiencyDC=TL_Efficiency_DC(DC_CableData, idxCable, NumConductors, D_SL, RatedPower_Generation, CF=0.5)
+    EfficiencyDC, MaxActivePower=TL_Efficiency_DC(DC_CableData, idxCable, NumConductors, D_SL, RatedPower_Generation, CF=0.5)
     
-    return AnnualizedCost_DC, NumConductors, EfficiencyDC
+    return AnnualizedCost_DC, NumConductors, EfficiencyDC, MaxActivePower
 
 
 
@@ -250,6 +251,7 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
     S_Efficiency=[]
     S_Mode=[]
     S_NumConductors=[]
+    S_MaxCableCapacity=[] #Maximum Active power for the transmission >= Design power
 
     for i in tqdm(range(len(TL_ShoreDistance))):
         D_SL=TL_ShoreDistance[i]
@@ -260,12 +262,13 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
         MinCost=-1
         Mode=-1
         Tmp_NumConductors=-1
+        Tmp_MaxCableCapacity=-1
         
         #AC Transmission
         #Run with minimum number of conductors
         for idxCable in range(len(AC_CableData)):
             
-            AnnualizedCost_AC, NumConductors, EfficiencyAC = TL_AnnualizedCost_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation)
+            AnnualizedCost_AC, NumConductors, EfficiencyAC, MaxCableCapacity = TL_AnnualizedCost_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation)
 
             
             if AnnualizedCost_AC!=-1:
@@ -281,11 +284,12 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
                     Best_Efficiency=EfficiencyAC
                     Mode="HVAC"
                     Tmp_NumConductors=NumConductors
+                    Tmp_MaxCableCapacity=MaxCableCapacity
                     
         #Run with minimum number of conductors + 1
         for idxCable in range(len(AC_CableData)):
             
-            AnnualizedCost_AC, NumConductors, EfficiencyAC=TL_AnnualizedCost_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation, AddExtraCable=1)
+            AnnualizedCost_AC, NumConductors, EfficiencyAC, MaxCableCapacity=TL_AnnualizedCost_AC(AC_CableData, idxCable, D_SL, RatedPower_Generation, AddExtraCable=1)
             
             if AnnualizedCost_AC!=-1:
                 
@@ -300,12 +304,13 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
                     Best_Efficiency=EfficiencyAC
                     Mode="HVAC"
                     Tmp_NumConductors=NumConductors
+                    Tmp_MaxCableCapacity=MaxCableCapacity
                     
                     
         #DC Transmission
         #Run with minimum number of conductors
         for idxCable in range(len(DC_CableData)):
-            AnnualizedCost_DC, NumConductors, EfficiencyDC=TL_AnnualizedCost_DC(DC_CableData, idxCable, D_SL, RatedPower_Generation)
+            AnnualizedCost_DC, NumConductors, EfficiencyDC, MaxCableCapacity=TL_AnnualizedCost_DC(DC_CableData, idxCable, D_SL, RatedPower_Generation)
             
 
             if AnnualizedCost_DC!=-1:
@@ -319,10 +324,11 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
                     Best_Efficiency=EfficiencyDC
                     Mode="HVDC"
                     Tmp_NumConductors=NumConductors
+                    Tmp_MaxCableCapacity=MaxCableCapacity
         
         #Run with minimum number of conductors +1
         for idxCable in range(len(DC_CableData)):
-            AnnualizedCost_DC, NumConductors, EfficiencyDC=TL_AnnualizedCost_DC(DC_CableData, idxCable, D_SL, RatedPower_Generation, AddExtraCable=1)
+            AnnualizedCost_DC, NumConductors, EfficiencyDC, MaxCableCapacity=TL_AnnualizedCost_DC(DC_CableData, idxCable, D_SL, RatedPower_Generation, AddExtraCable=1)
             
 
             if AnnualizedCost_DC!=-1:
@@ -336,6 +342,7 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
                     Best_Efficiency=EfficiencyDC
                     Mode="HVDC"
                     Tmp_NumConductors=NumConductors
+                    Tmp_MaxCableCapacity=MaxCableCapacity
         
         
         S_BestCable.append(BestCable)
@@ -343,6 +350,7 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
         S_Efficiency.append(Best_Efficiency)
         S_Mode.append(Mode)
         S_NumConductors.append(Tmp_NumConductors)
+        S_MaxCableCapacity.append(Tmp_MaxCableCapacity)
     
 
     S_BestACost=np.array(S_BestAnnualizedCost)
@@ -350,6 +358,7 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
     S_Efficiency=np.array(S_Efficiency)
     S_Mode=np.array(S_Mode)
     S_NumConductors=np.array(S_NumConductors)
+    S_MaxCableCapacity=np.array(S_MaxCableCapacity)
     
     # LCOE_SimpleApproximation=S_BestACost*10**6/(RatedPower_Generation*0.5*8760*S_Efficiency) # LCOE assuming a CF of 0.5 #[$/MWh*year]    
     LCOE_SimpleApproximation=(S_BestACost*10**6 + 83*RatedPower_Generation*0.5*8760*(1-S_Efficiency))/(RatedPower_Generation*0.5*8760) # LCOE assuming a CF of 0.5 #[$/MWh*year]    
@@ -363,6 +372,7 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
     S_BestACost=S_BestACost[FilterIdx]
     S_Efficiency=S_Efficiency[FilterIdx]
     S_NumConductors=S_NumConductors[FilterIdx]
+    S_MaxCableCapacity=S_MaxCableCapacity[FilterIdx]
     LCOE_SimpleApproximation=LCOE_SimpleApproximation[FilterIdx]
     TL_LatLong=TL_LatLong[FilterIdx,:]
     TL_ShoreDistance=TL_ShoreDistance[FilterIdx]
@@ -379,7 +389,10 @@ def GetBestTransmission(InputDataPath, AC_DataPath, DC_DataPath, RatedPower_Gene
                                 "TL_ShoreDistance":TL_ShoreDistance,
                                 "TL_Depth":TL_Depth,
                                 "DC_CableData": DC_CableData,
-                                "AC_CableData": AC_CableData}
+                                "AC_CableData": AC_CableData,
+                                "RatedPowerMW": RatedPower_Generation , 
+                                "MaxCableCapacity": S_MaxCableCapacity}#Considering only the cables, not the transformers (Transformers rated for RatedPower_Generation)
+    
     
     if SavePath!=None:
         np.savez(SavePath, TransmissionLineParameters=TransmissionLineParameters)
