@@ -26,6 +26,7 @@ __pycache__/
 
 #Reference papers
 References/ 
+InputData/Wave/References/
 
 #Data
 KiteLF_Optimization/DataSetPlatform.mat

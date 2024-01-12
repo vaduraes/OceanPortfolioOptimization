@@ -4,6 +4,9 @@ from itertools import product
 from numpy.random import randn
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
+from mpl_toolkits.axes_grid1 import make_axes_locatable
+
 from tqdm import tqdm
 import os
 import csv
@@ -15,6 +18,8 @@ import sys
 import geopandas as gpd
 import re
 from datetime import datetime, timedelta
+
+
 
 def GetTimeList(start_date, end_date, TimeDeltaHours=1):
     
@@ -405,4 +410,157 @@ def PlotsWithBOEM(GeoDataPath, PathBOEMData, BOEM_ShpDir, LatLong1, Y_Variable1,
     
     if SavePath!=None:
         plt.savefig(SavePath, bbox_inches='tight', dpi=700)
+        
+        
+def PlotEfficientFrontier(SolutionPaths, Legend, Title, linestyle=None,ColorList=None, SavePath=None):
+    
+    if linestyle==None:
+        linestyle=['-','-','-','-', '--','--','--','--',':',':',':',':','-.','-.','-.','-.']
+        ColorList=['k','b','g','r', 'k','b','g','r', 'k','b','g','r', 'k','b','g','r'] 
+              
+    for i, SolutionPath in enumerate(SolutionPaths):
+        Solution=np.load(SolutionPath,allow_pickle=True)
+        LCOE=Solution["Save_LCOE_Achieved"]
+        MWAvg=Solution["SaveTotalMWAvg"]
+        
+        LCOE=LCOE[MWAvg!=None]
+        
+        #Temporary solution for some simulations that I forgot to save the MWAvg and saved the MWH
+        if MWAvg[MWAvg!=None][0]>5000: #5GW
+            MWAvg=MWAvg[MWAvg!=None]/(24*365.25)
+        else:
+            MWAvg=MWAvg[MWAvg!=None]
+        
+        plt.plot(MWAvg,LCOE, label=Legend[i],linestyle=linestyle[i],color=ColorList[i])
 
+    plt.xlabel("MW Avg - Delivered to Shore")
+    plt.ylabel("LCOE [$/MWh]")
+    plt.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0., frameon=False)
+    
+    if SavePath!=None:
+        plt.savefig(SavePath, bbox_inches='tight', dpi=700)
+
+
+#Plot the turbine locations for a given solution
+def PlotTurbineLocations(SolutionPath, Legend, PathDataUnderLayer, LegendUnderLayerColorbar, StateCountoursPath,
+    LCOE_Target=-1, LatMaxMin=(33.3, 37.2), LongMaxMin=(-78.7, -74.3), SavePath=None):
+
+    #Legend=[] #one list per solution, each list contains the legend for each design of each technology 3d list
+    #UB_LCOE: Plot will use the LCOE closes to this value to plot the turbine locations
+
+    ShapeFileCoast=StateCountoursPath+"ne_10m_coastline.shp"
+    ShapeFileStates=StateCountoursPath+"ne_10m_admin_1_states_provinces_lines.shp"
+
+        
+    df = gpd.read_file(ShapeFileCoast)
+    df1 = gpd.read_file(ShapeFileStates)
+
+    fig, ax = plt.subplots()
+    fig.set_size_inches(18.5, 10.5)
+
+    df.plot(color='black',linewidth=1,ax=ax)
+    df1.plot(color='black',linewidth=1,ax=ax)
+
+    LatLongList_All_Wind=[]
+    LatLongList_All_Wave=[]
+    LatLongList_All_OC=[]
+
+    ColorList=["black","red","blue","green","orange","purple"]
+
+    LegendIn=[]
+    for i, path in enumerate(SolutionPath):
+        data=np.load(path,allow_pickle=True)
+        SolutionLCOE=data["Save_LCOE_Achieved"][:-1].astype(float)
+        SolutionIDX=np.abs(LCOE_Target - SolutionLCOE).argmin()
+        
+        
+        if len(data["PathWindDesigns"])>0:
+            RangeOfRotations=[0, 180, 90, 45, -45, -90]
+            
+            Y_Wind=data["Save_Y_Wind"][SolutionIDX]
+            
+            LatLongWind=np.empty((0, 2))
+            IDX_Designs=[]
+            IDX_Designs.append(0)
+            for PathWindDesigns in data["PathWindDesigns"]:
+
+                WindData=np.load(PathWindDesigns,allow_pickle=True)
+                LatLongWind=np.concatenate((LatLongWind,WindData["LatLong"]))
+                IDX_Designs.append(IDX_Designs[-1]+WindData["LatLong"].shape[0])
+            
+            
+            for j in range(len(IDX_Designs)-1):
+                LatLong_tmp=LatLongWind[IDX_Designs[0+j]:IDX_Designs[1+j],:][Y_Wind[IDX_Designs[0+j]:IDX_Designs[1+j]]>0,:]
+                #if len(LatLong_tmp)>0:
+                plt.scatter(LatLong_tmp[:,1], LatLong_tmp[:,0], marker=(3, 0, RangeOfRotations[i+j]), s=100, edgecolors=ColorList[i+j], facecolors='none',alpha=1, label=Legend[i][0][j])
+
+
+        if len(data["PathWaveDesigns"])>0:
+            RangeOfRotations=[45, 0, 30, 60]
+            
+            Y_Wave=data["Save_Y_Wave"][SolutionIDX]
+
+            LatLongWave=np.empty((0, 2))
+            IDX_Designs=[]
+            IDX_Designs.append(0)
+            for PathWaveDesigns in data["PathWaveDesigns"]:
+
+                WaveData=np.load(PathWaveDesigns,allow_pickle=True)
+                LatLongWave=np.concatenate((LatLongWave,WaveData["LatLong"]))
+                IDX_Designs.append(IDX_Designs[-1]+WaveData["LatLong"].shape[0])
+            
+            for j in range(len(IDX_Designs)-1):
+                LatLong_tmp=LatLongWave[IDX_Designs[0+j]:IDX_Designs[1+j],:][Y_Wave[IDX_Designs[0+j]:IDX_Designs[1+j]]>0,:]
+                #if len(LatLong_tmp)>0:
+                plt.scatter(LatLong_tmp[:,1], LatLong_tmp[:,0], marker=(4, 0, RangeOfRotations[i+j]), s=100, edgecolors=ColorList[i+j], facecolors='none',alpha=1, label=Legend[i][1][j]) 
+
+                
+
+        if len(data["PathKiteDesigns"])>0:
+            RangeOfRotations=["1", "2", "3", "4","+"]
+            
+            Y_Kite=data["Save_Y_Kite"][SolutionIDX]
+            LatLongKite=np.empty((0, 2))
+            IDX_Designs=[]
+            IDX_Designs.append(0)
+            for PathKiteDesigns in data["PathKiteDesigns"]:
+
+                KiteData=np.load(PathKiteDesigns,allow_pickle=True)
+                LatLongKite=np.concatenate((LatLongKite,KiteData["LatLong"]))
+                IDX_Designs.append(IDX_Designs[-1]+KiteData["LatLong"].shape[0])
+            
+            for j in range(len(IDX_Designs)-1):
+                
+                LatLong_tmp=LatLongKite[IDX_Designs[0+j]:IDX_Designs[1+j],:][Y_Kite[IDX_Designs[0+j]:IDX_Designs[1+j]]>0,:]
+                # if len(LatLong_tmp)>0:
+                plt.scatter(LatLong_tmp[:,1], LatLong_tmp[:,0], marker=RangeOfRotations[j+i], c=ColorList[i+j], s=100,  alpha=0.9, label=Legend[i][2][j]) 
+
+            
+    ax.set_xlim(LongMaxMin) 
+    ax.set_ylim(LatMaxMin)
+    plt.xlabel("Longitude", fontsize=12)
+    plt.ylabel("Latitude", fontsize=12)
+
+
+    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=5, fontsize=12,frameon=False)
+
+    divider = make_axes_locatable(ax)
+
+
+    if len(PathDataUnderLayer)!=0:
+        for i, PathData in enumerate(PathDataUnderLayer):
+            data=np.load(PathData,allow_pickle=True)
+            Energy_pu=data["Energy_pu"].mean(axis=0)
+            LatLong=data["LatLong"]
+            
+            if data["ResolutionKm"]!=-1:
+                s=1 #2km
+            else:
+                s=10
+
+            plt.scatter(LatLong[:,1], LatLong[:,0], c=Energy_pu, s=s, cmap="jet", alpha=0.3)
+            clb=plt.colorbar(cax=divider.append_axes("right", size="5%", pad=0.05 + i*0.6))
+            clb.ax.set_title(LegendUnderLayerColorbar[i])
+
+    if SavePath!=None:
+        plt.savefig(SavePath, bbox_inches='tight', dpi=700)

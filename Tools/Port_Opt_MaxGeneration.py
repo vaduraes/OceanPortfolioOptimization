@@ -538,7 +538,7 @@ def SolvePortOpt_MaxGen_LCOE_Iterator(PathWindDesigns, PathWaveDesigns, PathKite
         ,Max_CollectionRadious,MaxDesignsWind, MaxDesingsWave, MaxDesingsKite,MinNumWindTurb,MinNumWaveTurb,MinNumKiteTrub)
 
     opt = SolverFactory('gurobi', solver_io="python")
-    opt.options['mipgap'] = 0.05
+    opt.options['mipgap'] = 0.02
 
     #LCOE Target
     def LCOETarget_rule(Model, LCOE_Max):  
@@ -633,7 +633,7 @@ def SolvePortOpt_MaxGen_LCOE_Iterator(PathWindDesigns, PathWaveDesigns, PathKite
                     LowestLCOE=CurrentLCOE
                     
                     Save_LCOE_Achieved.append(CurrentLCOE)
-                    SaveTotalMWAvg.append(MWhYear)
+                    SaveTotalMWAvg.append(MWhYear/(24*365.25))
                     
                     
                     print("LCOE OPT: %.2f,\n MW Wind: %.2f,\nMW Wave: %.2f,\nMW Kite: %.2f,\nMW Curtailment: %.2f,\nMW Total: %.2f\n" % (CurrentLCOE,EGWind,EGWave,EGKite,TotalCurtailment,EGWind+EGWave+EGKite-TotalCurtailment))
