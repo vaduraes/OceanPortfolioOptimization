@@ -9,6 +9,7 @@ This code contains functions to compute optimal offshore energy porfolios {Wind-
 5) PlotPortfolioResults.ipynb: Generate plots from the portfolio results
 6) DownloadWaveDataWWIII.ipynb: Code to download Hs and Tp (wave data) from wave watch III model
 7) Wave_Grib2NPZ.ipynb: Convert GRIB2 to .npz file for the Wave Watch 3 data
+8) ExtremeWindWave.ipynb: Extreme value analysis for wind-wave
 
 #######-------./Tools/
 1) TransmissionTools.py: Tools to compute transmission cost and circuit parameters
