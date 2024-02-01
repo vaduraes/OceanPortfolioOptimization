@@ -10,6 +10,9 @@ This code contains functions to compute optimal offshore energy porfolios {Wind-
 6) DownloadWaveDataWWIII.ipynb: Code to download Hs and Tp (wave data) from wave watch III model
 7) Wave_Grib2NPZ.ipynb: Convert GRIB2 to .npz file for the Wave Watch 3 data
 8) ExtremeWindWave.ipynb: Extreme value analysis for wind-wave
+9) DownloadOceanCurrentHYCOM.ipynb: Download hycom datasets
+10)OceanCurrent_NC2NPZ: Process Hycom data and convert to NPZ
+11)GetKiteCostGeneration.ipynb: Get generation and cost for different kite designs
 
 #######-------./Tools/
 1) TransmissionTools.py: Tools to compute transmission cost and circuit parameters
@@ -19,6 +22,9 @@ This code contains functions to compute optimal offshore energy porfolios {Wind-
 5) Port_Opt_MaxGeneration: Model to solve the portfolio optimization for the max generation constrained to LCOE (can run wind, wave and kite)
 6) DownloadWWIII_Wave.py: Code to download Hs and Tp (wave data) from wave watch III model
 7) WWaveGrib2Npz.py: Convert GRIB2 to .npz file for the Wave Watch 3 data
+8) DownloadHYCOM_OC.py: Download Hycom dataset
+9) OC_nc2npz.py: Convet netcdf files from hycom to npz
+10)KitePortfolioTools.py: Tools to simulate kite designs
 
 #######-------./InputData/
 1) CoastLine: Division for the NC coast and states

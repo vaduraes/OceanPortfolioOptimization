@@ -9,6 +9,7 @@ import urllib.request
 from multiprocessing import Pool
 from tqdm import tqdm  
 from functools import partial
+import time
 
 
 LatMinMax=(33.3, 37.2)
@@ -58,18 +59,29 @@ def ListHYCOM_MultiProcess(StartDTime, EndDTime, LatMinMax=LatMinMax,  LongMinMa
         
 def DonwloadHYCOM(i, List_DownloadLinks,ListSavePaths):
 
-
+    import socket
+    socket.setdefaulttimeout(2000)
+    
     try:
         print("Downloading File: "+ListSavePaths[i],flush=True)
         urllib.request.urlretrieve(List_DownloadLinks[i], ListSavePaths[i])
         
-    except:
-        pass
+    except Exception as e:
+        print(f"Error downloading {ListSavePaths[i]}: {e}",file=sys.stderr)
+        
+        # x=0.5
+        # time.sleep(x*60)#Sleep for x hours before trying again
     
-def DownloadHYCOM_MultiProcess (StartDTime, EndDTime, PoolSize=10, LatMinMax=LatMinMax,  LongMinMax=LongMinMax):
+def DownloadHYCOM_MultiProcess (StartDTime, EndDTime, PoolSize=2, LatMinMax=LatMinMax,  LongMinMax=LongMinMax):
     List_DownloadLinks, ListSavePaths, ListStartDate, ListEndDate=ListHYCOM_MultiProcess(StartDTime, EndDTime, LatMinMax=LatMinMax,  LongMinMax=LongMinMax)
     
     Iterator=partial(DonwloadHYCOM,List_DownloadLinks=List_DownloadLinks,ListSavePaths=ListSavePaths)
     
-    with Pool(PoolSize) as p:
-        ListOfGrib2Results = list(tqdm(p.imap(Iterator, range(len(List_DownloadLinks))), total=len(List_DownloadLinks)))
+    #hycon enforces a 1/2 connection only policy, if they blocked your IP, you can only download 1 file at a time
+    #this may happen or not depending on the number of files you are downloading
+    if PoolSize==1:
+        for i in tqdm(range(len(List_DownloadLinks))):
+            Iterator(i)
+    else:
+        with Pool(PoolSize) as p:
+            ListOfGrib2Results = list(tqdm(p.imap(Iterator, range(len(List_DownloadLinks))), total=len(List_DownloadLinks)))

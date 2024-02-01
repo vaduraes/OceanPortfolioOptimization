@@ -156,7 +156,7 @@ def GetDepth(InputDataPath, LatLong):
     
     return Depth
 
-def PlotGeneralGeoData(LatLong, Y_Variable, GeoDataPath, ColorBarTitle=None, Title=None, SavePath=None, s=6, LatMaxMin=(33.3, 37.2), LongMaxMin=(-78.7, -74.3)):
+def PlotGeneralGeoData(LatLong, Y_Variable, GeoDataPath="./InputData/CoastLine/", ColorBarTitle=None, Title=None, SavePath=None, s=6, LatMaxMin=(33.3, 37.2), LongMaxMin=(-78.7, -74.3)):
 
     ShapeFileCoast=GeoDataPath+"ne_10m_coastline.shp"
     ShapeFileStates=GeoDataPath+"ne_10m_admin_1_states_provinces_lines.shp"
