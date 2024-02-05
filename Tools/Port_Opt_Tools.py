@@ -8,14 +8,15 @@ import sys
 #Determine the areas that are overlapping between two sets of lat/long coordinates.
 #We need this to limit the number of turbines that are placed in the same area.
 def GetOverlaps_Idx_Area(LatLong1, ResolutionKm1, ResolutionDegrees1,MaxNumTurbinesPerSite1,
-                         LatLong2, ResolutionKm2, ResolutionDegrees2,MaxNumTurbinesPerSite2, SameTech=1):
+                         LatLong2, ResolutionKm2, ResolutionDegrees2,MaxNumTurbinesPerSite2, SameTech=1, PrintName=""):
     IdxOverlap=[]
     AreaOverlap=[]
     AreaRef1Ref2=[]
     MaxTurbinesRef1Ref2=[]
     PercentageOverlap=[]
-
+    
     if len(LatLong2)!=0 and len(LatLong1)!=0:
+        print('Finding Overlap Site Locations for '+PrintName)
         for i in tqdm(range(len(LatLong1))):
             LatLong1_tmp=LatLong1[i,:]
             LatKmPerDegree1= 111.32 #How many km per lat degrees

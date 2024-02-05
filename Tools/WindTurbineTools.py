@@ -135,7 +135,7 @@ def GetCostAndGenerationWindTurbine(InputDataPath, WindCostPath, WindTurbine, Wi
     CAPEX=CAPEX[WindTurbine]
     OPEX=OPEX[WindTurbine]
 
-    CAPEX=CAPEX*RatedPower*(10**-3) #[M$]
+    CAPEX=CAPEX*RatedPower*(10**-3) #[$/Year]
     OPEX =OPEX*RatedPower*(10**-3) #[$/Year]
 
     FCR=6.8/100 # Factor of Capital Return(WECC ATB-2023)

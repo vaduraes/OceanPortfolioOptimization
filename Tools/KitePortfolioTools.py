@@ -21,7 +21,8 @@ import random
 
 sys.path.append('./Tools')
 from OC_nc2npz import ReadHYCOMData
-from GeneralGeoTools import GetDepth
+from GeneralGeoTools import GetDepth, GetDistanceToShore, GetTimeList, MinDistanceSetPoints
+
 sys.path.append('./Tools/KitesMatlab')
 
 def WriteMatlabInputs2Kites (HycomPath, StartDTime, EndDTime, TimeDiscretization, DepthDataPath="./InputData", SaveMatPath=None):
@@ -113,7 +114,7 @@ def TimeSeriesGeneration_Kite (PathKiteParams, i_vd, i_cs, SavePowerTimeSeriesPa
     Length=dataframe.iloc[1+28:5+28,1:].values
     Diameter=dataframe.iloc[1+35:5+35,1:].values
     LCOE=dataframe.iloc[1+42:5+42,1:].values
-    AnnualizedCost=LCOE*Power*365*24 #Annualized Cost (in $/year)
+    AnnualizedCost=LCOE[i_vd, i_cs] *Power[i_vd, i_cs]*365*24/10**6 #Annualized Cost (in M$/year)
 
 
     Envs=[matlab.engine.start_matlab() for i in range(NumEnvs)] #Create matlab envs
@@ -134,33 +135,41 @@ def TimeSeriesGeneration_Kite (PathKiteParams, i_vd, i_cs, SavePowerTimeSeriesPa
     Size_time_matlab =int(Envs[0].workspace["SizeTime"])
     LatLong=np.array(Envs[0].workspace["LatLong"])
     dmax=np.array(Envs[0].workspace["Dmax"][0])[0,:]
+    TimeList=np.array(Envs[0].eval("str2num(TimeList)"),dtype=int)[:,0]
 
     #Create list of commands
     print("Running Design: Vertical Depth Index: %d --- Base Current Speed Index: %d" % (i_vd, i_cs))
     #Create list of commands
     cmd1=[]
     cmd2=[]        
-    for i in range(Size_s_matlab):
-        if dmax[i]>30: #only consider sites with depth above 30m
+    IdxIn=[]
+    RawResource=[] #sample of the OC speed at surface for each site we simulate (average across all time)
+    
+    for i in range(Size_s_matlab):   
+        Envs[0].eval('MaxMeanDepthCurrentAtSite=max((mean(OCSpeed({},:,:),3)),[],"all");'.format(i+1) ,nargout=0) #(mean for each depth, then max across depths)
+        MaxMeanDepthCurrentAtSite =Envs[0].workspace["MaxMeanDepthCurrentAtSite"]
+        if MaxMeanDepthCurrentAtSite>0.5:
             
-            Envs[0].eval('MaxMeanDepthCurrentAtSite=max((mean(OCSpeed({},:,:),3)),[],"all");'.format(i+1) ,nargout=0) #(mean for each depth, then max across depths)
-            MaxMeanDepthCurrentAtSite =Envs[0].workspace["MaxMeanDepthCurrentAtSite"]
-            if MaxMeanDepthCurrentAtSite>0.5:
+            Envs[0].eval('RawResourceSample=mean(OCSpeed({},1,:));'.format(i+1) ,nargout=0) #(mean for each depth, then max across depths)
+            RawResource.append(float(Envs[0].workspace["RawResourceSample"]))
+            
+            IdxIn.append(i)
+            
+            RatedPower_tmp=Power[i_vd, i_cs]    #Rated Power (in Kw)
+            Span_tmp = Span[i_vd, i_cs]         #wingspan (in m) 
+            AR_tmp = AspectRatio[i_vd, i_cs]    #wing aspect ratio 
+            Len_tmp = Length[i_vd, i_cs]        #fuselage length (in m)
+            Dia_tmp = Diameter[i_vd, i_cs]      #fuselage diameter (in m)
 
 
-                
-                RatedPower_tmp=Power[i_vd, i_cs]    #Rated Power (in Kw)
-                Span_tmp = Span[i_vd, i_cs]         #wingspan (in m) 
-                AR_tmp = AspectRatio[i_vd, i_cs]    #wing aspect ratio 
-                Len_tmp = Length[i_vd, i_cs]        #fuselage length (in m)
-                Dia_tmp = Diameter[i_vd, i_cs]      #fuselage diameter (in m)
-
-
-                cmd1_tmp = str('iSite ='+str(i+1)+';')
-                cmd2_tmp = str('uGeo =['+str(Span_tmp)+','+str(AR_tmp)+','+str(Len_tmp)+','+str(Dia_tmp)+','+str(RatedPower_tmp)+'];')
-                cmd1.append(cmd1_tmp)
-                cmd2.append(cmd2_tmp)
-
+            cmd1_tmp = str('iSite ='+str(i+1)+';')
+            cmd2_tmp = str('uGeo =['+str(Span_tmp)+','+str(AR_tmp)+','+str(Len_tmp)+','+str(Dia_tmp)+','+str(RatedPower_tmp)+'];')
+            cmd1.append(cmd1_tmp)
+            cmd2.append(cmd2_tmp)
+            
+    LatLong=LatLong[IdxIn,:]
+    dmax=dmax[IdxIn]
+    
     #Run all site locations for a given design
     G_count=0
     NumRuns=0
@@ -190,9 +199,38 @@ def TimeSeriesGeneration_Kite (PathKiteParams, i_vd, i_cs, SavePowerTimeSeriesPa
     PowerTimeSeries=np.array(PowerTimeSeries)
     MatlabSiteIdx=np.array(MatlabSiteIdx)
 
-    np.savez(SavePowerTimeSeriesPath+'PowerTimeSeriesKite_VD'+str(VerticalDepth[i_vd])+'_BCS'+str(BaseCSpeed[i_cs])+'.npz', PowerTimeSeries=PowerTimeSeries, MatlabSiteIdx=MatlabSiteIdx,
-                LatLong=LatLong, dmax=dmax, AnnualizedCost=AnnualizedCost[i_vd, i_cs], StructuralMass=StructuralMass[i_vd, i_cs], RatedPower=Power[i_vd, i_cs],
-                Span=Span[i_vd, i_cs], AspectRatio=AspectRatio[i_vd, i_cs], Length=Length[i_vd, i_cs], Diameter=Diameter[i_vd, i_cs])
+    #this is the save format for the portfolio optimization models
+    Energy_pu=PowerTimeSeries/Power[i_vd, i_cs]  #PowerTimeSeries is in Kw, as of this line RatedPower_tmp=Power[i_vd, i_cs]  is also on KW
+    Energy_pu=Energy_pu.T #Time x Site (old miskate from the past)
+    RatedPower=Power[i_vd, i_cs]/1000 #Rated Power in MW 
+    LatLong=LatLong
+    Depth=dmax #Depth for the portfolio optimization data is the maximum depth at each site
+    DistanceShore=GetDistanceToShore("./InputData", LatLong)
+    
+    RawResource=np.array(RawResource) #sample OceanCurrent at surface for each site
+    
+    TimeList_updated=[]
+    for i in TimeList:
+        try:
+            TimeList_updated.append(dt.datetime.strptime(str(i), '%Y%m%d'))
+        except:
+            TimeList_updated.append(dt.datetime.strptime(str(i)+'00', '%Y%m%d%H'))
+    
+    CAPEX_site="Look at Sharks Table"
+    OPEX_site ="Look at Sharks Table"
+    AnnualizedCost=np.array([AnnualizedCost]*LatLong.shape[0]) # in M$/year
+    
+    NumberOfCellsPerSite=np.ones(LatLong.shape[0]) #one site per cell
+    ResolutionDegrees=0.08 #Has resolution of 0.04 lat and 0.08 long, need to create a function to deal with this type of exception, otherwise cant use scale functions on GeneralGeoTools, and
+    #have a incorrect overlaping computation on the portfolio optimization model
+    ResolutionKm=-1
+
+    np.savez(SavePowerTimeSeriesPath+'PowerTimeSeriesKite_VD'+str(VerticalDepth[i_vd])+'_BCS'+str(BaseCSpeed[i_cs])+'.npz', 
+             Energy_pu=Energy_pu, RawResource=RawResource, TimeList=TimeList_updated, LatLong=LatLong, Depth=Depth, DistanceShore=DistanceShore,
+             CAPEX_site=CAPEX_site, OPEX_site=OPEX_site, AnnualizedCost=AnnualizedCost, NumberOfCellsPerSite=NumberOfCellsPerSite,
+             RatedPower=RatedPower, ResolutionDegrees=ResolutionDegrees, ResolutionKm=ResolutionKm, MatlabSiteIdx=MatlabSiteIdx, StructuralMass=StructuralMass[i_vd, i_cs],
+             Span=Span[i_vd, i_cs], AspectRatio=AspectRatio[i_vd, i_cs], Length=Length[i_vd, i_cs], Diameter=Diameter[i_vd, i_cs])
+             
 
     #Close environments
     for i in range(NumEnvs):

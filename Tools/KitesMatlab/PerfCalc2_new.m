@@ -86,6 +86,7 @@ SFOTParams.eta = 1;
 [Perf, Ind] = max((CL.^3./CD.^2));                                             %find optimal AoA
 aOpt = AoA(Ind)*(180/pi);                                                      %optimal AoA
 
+%look 
 idealPower = (2/27)*SFOTParams.rho*SFOTParams.eta*Perf*Sw*(vel^3)*1e-3*((cosd(theta))^3); 
 if idealPower>2
     Power=ratedPower

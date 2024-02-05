@@ -9,7 +9,6 @@ addpath("./scripts/")
 addpath("./functions/SWDT/")
 File='DataSetPlatform.mat';
 load(File) %%%%%Input your data set here
-DataSet.vel(:,:,:,:)=0.5;
 % Set xSite and uGeo %%%%%Can comment out if already have a vector for xsite, can also use uopt(PMInd,1:4) to populate uGeo.
 xSite = [1,1];
 uGeo = [11,3,7,0.4,18.879664767349897]; %See 3 lines below for what these are
@@ -23,7 +22,7 @@ Dia = uGeo(4);          %fuselage diameter (in m)
 
 %% Set Rated Power%%%%% From Ben's Code
 ratedPWR = 150000.1097;
-uGeo(5)=ratedPWR
+uGeo(5)=ratedPWR;
 
 %% Parameter setup
 
@@ -84,9 +83,13 @@ options = optimoptions('fmincon','Display',SFOTParams.fminconDisplay,'Algorithm'
                     'MaxFunctionEvaluations',1e4,'MaxIterations',1e6,'OptimalityTolerance',1e-12);
 %uDep = [theta lThr]
 theta_ub = SFOTParams.thetaUB; 
-lb = [15 40];
+% lb = [15 40]; %Noticed problems with these feasibility bounds lb and ub
+lb = [15 20/sind(50)];
+
 %ub = [theta_ub SFOTParams.dmax/sind(theta_ub)]; 
-ub = [theta_ub 2e3];
+% ub = [theta_ub 2e3];
+ub = [50 300/sind(15)];
+
 Jmulti = zeros(1,3);
 uDepOptmulti = zeros(2,3);
 
@@ -147,12 +150,9 @@ d_m = uDep(2)*sind(uDep(1));
 
 % Power generated
 [Power,aOpt,Fwing,~] = PerfCalc2(SFOTParams,uGeo,uDep,vel);
-uGeo
-uDep
-vel
-%Limit generation to rated power
-Power(Power>uGeo(5))=uGeo(5);
-Cost = -Power
 
+%Limit generation to rated power
+% Power(Power>uGeo(5))=uGeo(5);
+Cost = -Power;
 
 end

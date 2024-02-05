@@ -41,5 +41,8 @@ This code contains functions to compute optimal offshore energy porfolios {Wind-
 
 
 #####to do things
-Depth curves on BOEM plots?
-
+1- Implement Depth curves on BOEM plots?
+2- X,Y resolutions differ on hycom (0.08 and 0.04) approximated as 0.08 for all, add unecessary overlapping constrains 
+3- overlap wind kite locations ?! Double check Constraints (Optimization) 1 wind site can accomodate at least one kite
+4- Problem with kite costs from matlab
+5- Problem with [lb, ub] from matlab kite optimization and power time series

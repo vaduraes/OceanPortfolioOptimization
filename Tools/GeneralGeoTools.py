@@ -5,6 +5,7 @@ from numpy.random import randn
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
+import matplotlib.cm as cm
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 from tqdm import tqdm
@@ -440,9 +441,45 @@ def PlotEfficientFrontier(SolutionPaths, Legend, Title, linestyle=None,ColorList
     if SavePath!=None:
         plt.savefig(SavePath, bbox_inches='tight', dpi=700)
 
+def PlotPowerTechDistribution(SolutionPath, SavePath=None):
 
+    Data=np.load(SolutionPath,allow_pickle=True)
+    Save_TotalMWAvgWind=Data["Save_TotalMWAvgWind"]
+    Save_TotalMWAvgWave=Data["Save_TotalMWAvgWave"]
+    Save_TotalMWAvgKite=Data["Save_TotalMWAvgKite"]
+    Save_totalMWAvgCurtailment=Data["Save_totalMWAvgCurtailment"]
+    SaveTotalMWAvg=Data["SaveTotalMWAvg"]
+    Save_LCOE_Achieved=Data["Save_LCOE_Achieved"]
+
+
+    # Colors for each energy source
+    colors = ['skyblue', 'seagreen', 'coral', 'purple']
+
+    fig, ax = plt.subplots()
+
+    # Stacking wind, wave, and ocean current energy
+    ax.bar(Save_LCOE_Achieved, Save_TotalMWAvgWind, width=3, color=colors[0], label='Wind Avg Gen')
+    ax.bar(Save_LCOE_Achieved, Save_TotalMWAvgWave, width=3, color=colors[1], label='Wave Avg Gen', bottom=Save_TotalMWAvgWind)
+    ax.bar(Save_LCOE_Achieved, Save_TotalMWAvgKite, width=3, color=colors[2], label='Kite Avg Gen', bottom=Save_TotalMWAvgWind + Save_TotalMWAvgWave)
+
+    # Adding curtailment below the x-axis
+    ax.bar(Save_LCOE_Achieved, -Save_totalMWAvgCurtailment, width=3, color=colors[3], label='Curtailment')
+
+    ax.plot(Save_LCOE_Achieved, SaveTotalMWAvg, color='black', label='Avg Gen to Shore')
+
+    # Setting labels and title
+    ax.set_xlabel('LCOE ($/MWh)')
+    ax.set_ylabel('Avg Power (MW Avg)')
+    ax.set_title('Energy Generation and Curtailment by Source')
+    plt.legend(loc='upper left', bbox_to_anchor=(1.05, 1), borderaxespad=0., frameon=False)
+
+    plt.grid(linestyle='--')
+
+    if SavePath!=None:
+        plt.savefig(SavePath, bbox_inches='tight', dpi=700)
+        
 #Plot the turbine locations for a given solution
-def PlotTurbineLocations(SolutionPath, Legend, PathDataUnderLayer, LegendUnderLayerColorbar, StateCountoursPath,
+def PlotTurbineLocations(SolutionPath, Legend, PathDataUnderLayer, LegendUnderLayerColorbar, StateCountoursPath, UnderLayerVariable=["Energy_pu", "RawResource","RawResource"],
     LCOE_Target=-1, LatMaxMin=(33.3, 37.2), LongMaxMin=(-78.7, -74.3), SavePath=None):
 
     #Legend=[] #one list per solution, each list contains the legend for each design of each technology 3d list
@@ -457,6 +494,7 @@ def PlotTurbineLocations(SolutionPath, Legend, PathDataUnderLayer, LegendUnderLa
 
     fig, ax = plt.subplots()
     fig.set_size_inches(18.5, 10.5)
+    
 
     df.plot(color='black',linewidth=1,ax=ax)
     df1.plot(color='black',linewidth=1,ax=ax)
@@ -541,16 +579,20 @@ def PlotTurbineLocations(SolutionPath, Legend, PathDataUnderLayer, LegendUnderLa
     plt.xlabel("Longitude", fontsize=12)
     plt.ylabel("Latitude", fontsize=12)
 
-
     plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=True, ncol=5, fontsize=12,frameon=False)
 
     divider = make_axes_locatable(ax)
 
-
     if len(PathDataUnderLayer)!=0:
         for i, PathData in enumerate(PathDataUnderLayer):
             data=np.load(PathData,allow_pickle=True)
-            Energy_pu=data["Energy_pu"].mean(axis=0)
+            if UnderLayerVariable[i]=="Energy_pu":
+                RefData=data["Energy_pu"].mean(axis=0)
+            else:
+                RefData=data[UnderLayerVariable[i]]
+                if len(np.shape(RefData))==2:
+                    RefData=RefData.mean(axis=0)
+                
             LatLong=data["LatLong"]
             
             if data["ResolutionKm"]!=-1:
@@ -558,9 +600,24 @@ def PlotTurbineLocations(SolutionPath, Legend, PathDataUnderLayer, LegendUnderLa
             else:
                 s=10
 
-            plt.scatter(LatLong[:,1], LatLong[:,0], c=Energy_pu, s=s, cmap="jet", alpha=0.3)
-            clb=plt.colorbar(cax=divider.append_axes("right", size="5%", pad=0.05 + i*0.6))
-            clb.ax.set_title(LegendUnderLayerColorbar[i])
+            norm = mcolors.Normalize(vmin=min(RefData), vmax=max(RefData))
 
+            
+            if i==0:
+                sm = cm.ScalarMappable(norm=norm, cmap='jet')
+                colors = plt.cm.jet(norm(RefData))
+                ax.scatter(LatLong[:,1], LatLong[:,0], c=sm.to_rgba(RefData), s=s, alpha=0.3)
+            
+            else:
+                sm = cm.ScalarMappable(norm=norm, cmap='jet')
+                colors = plt.cm.jet(norm(RefData))
+                ax.scatter(LatLong[:,1], LatLong[:,0], edgecolor=sm.to_rgba(RefData), facecolors='none', marker='s', s=s+5,alpha=0.7)
+
+
+            clb=plt.colorbar(sm, norm=norm, cax=divider.append_axes("right", size="5%", pad=0.05 + i*0.6))
+            clb.ax.set_title(LegendUnderLayerColorbar[i])
+                
+                
     if SavePath!=None:
         plt.savefig(SavePath, bbox_inches='tight', dpi=700)
+        

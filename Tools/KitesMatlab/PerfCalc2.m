@@ -29,12 +29,13 @@ Swet = pi*Len*Dia*((1 - (2/lamda))^(2/3))*(1 + 1/(lamda^2));
 % Choose tether diameter based on wing area 
 %Diathr = min(SFOTParams.Diathr,0.8*thrDiaMap(Sw));
 Diathr = SFOTParams.Diathr;
-if lthr < 600
-    lthr_eff = lthr;
-else
-    lthr_eff = 600 + (lthr - 600)/4;
-end
-Sthr = Diathr*(lthr_eff/4);                                                           %0.25 tether length straight assummption
+lthr_eff = lthr;
+% if lthr < 600
+%     lthr_eff = lthr;
+% else
+%     lthr_eff = 600 + (lthr - 600)/4;
+% end
+Sthr = Diathr*(lthr_eff/4);    %0.25 tether length straight assummption
 
 % Wing 
 slopeW = ((2*pi*SFOTParams.gammaw)./(1+((2.*pi.*SFOTParams.gammaw)./(pi.*SFOTParams.eLw.*AR))));
@@ -47,7 +48,7 @@ Cdw = (SFOTParams.Cdw_ind./AR+0.0334).*(Clw-ClwD0).^2 + Cd0w;
 
 % HStab 
 Sh = ((SFOTParams.x_g-SFOTParams.h_sm)/(L+SFOTParams.h_sm-SFOTParams.x_g))*Sw;    % Area gotten by satisfying stability margins
-Sh = min(Sh,2.5);
+Sh = max(Sh,2.5); % was min(Sh, 2.5); Mary 2/2/24
 xeta = (SFOTParams.ClHStall*Sh)/((Sw*max(Clw)) + (SFOTParams.ClHStall*Sh));       % maximizing lift from H.Stabilizer 
 Clh = (Sw*Clw*xeta)./(Sh*(1-xeta));                                               % Lift of H.Stabilizer 
 Cdh = SFOTParams.Cdh_ovrall.*((Clh*(Sh/Sw)).^2) + SFOTParams.Cd0_h; 
@@ -82,7 +83,8 @@ Eff = p00 + p10*u(2) + p01*u(1) + p20*u(2)^2 + p11*u(2)*u(1) + p02*u(1)^2 + p30*
             + p12*u(2)*u(1)^2;% + p03*u(1)^3 + p40*u(2)^4 + p31*u(2)^3*u(1) + p22*u(2)^2*u(1)^2 ... 
             %+ p13*u(2)*u(1)^3 + p04*u(1)^4;
 
-SFOTParams.eta = 0.85*Eff; 
+% SFOTParams.eta = 0.85*Eff; %on the seabed
+SFOTParams.eta = 1; %deploying on the surface
 
 %% Calculate power and performance
 

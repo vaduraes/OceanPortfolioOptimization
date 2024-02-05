@@ -20,7 +20,12 @@ from Port_Opt_Tools import GetOverlaps_Idx_Area
 
 def PreparePotOptInputs(PathWindDesigns, PathWaveDesigns, PathKiteDesigns, PathTransmissionDesign, LCOE_RANGE=range(200,30,-2)\
     ,Max_CollectionRadious=30, MaxDesignsWind=1, MaxDesignsWave=1, MaxDesignsKite=1, MinNumWindTurb=0, MinNumWaveTurb=0, MinNumKiteTrub=0,
-    WindTurbinesPerSite=4, KiteTurbinesPerSite=4, WaveTurbinesPerSite=4):
+    WindTurbinesPerSite=4, KiteTurbinesPerSite=390, WaveTurbinesPerSite=4):
+    
+    
+    # WindTurbinesPerSite= 4 per 2x2km cells (as base resolution)
+    # KiteTurbinesPerSite= 25 per 2x2km cells, but the simulation is running on 0.08x0.08 degrees cells (as base resolution)
+    # KiteTurbinesPerSite= 390 per 9x7km cells
 
     #WindTurbinesPerSite: Number of turbines per site location based on the initial wind resolution from NREL
     #KiteTurbinesPerSite: Number of turbines per site location based on the initial kite resolution from where the data was obtained (HYCOM, MABSAB)
@@ -145,10 +150,10 @@ def PreparePotOptInputs(PathWindDesigns, PathWaveDesigns, PathKiteDesigns, PathT
     PortImputDir={  #Wind data
                     "WindEnergy":WindEnergy,
                     "WindLatLong":WindLatLong,
-                    "AnnualizedCostWind":AnnualizedCostWind,
+                    "AnnualizedCostWind":AnnualizedCostWind, #Costs should be in M$/year
                     "MaxNumWindPerSite":MaxNumWindPerSite,
                     "WindDesign":WindDesign,
-                    "RatedPowerWindTurbine":RatedPowerWindTurbine,
+                    "RatedPowerWindTurbine":RatedPowerWindTurbine, #shoud be in MW
                     "NumWindSites": len(WindLatLong),
                     "WindResolutionDegrees":WindResolutionDegrees,
                     "WindResolutionKm":WindResolutionKm,
@@ -348,17 +353,17 @@ def SolvePortOpt_MaxGen_Model(PathWindDesigns, PathWaveDesigns, PathKiteDesigns,
         IdxOverlap_WindWind, AreaOverlap_WindWind, AreaRef1Ref2_WindWind, MaxTurbinesRef1Ref2_WindWind, PercentageOverlap_WindWind=GetOverlaps_Idx_Area(
             InputDir["WindLatLong"], InputDir["WindResolutionKm"], InputDir["WindResolutionDegrees"], InputDir["MaxNumWindPerSite"],
             InputDir["WindLatLong"], InputDir["WindResolutionKm"], InputDir["WindResolutionDegrees"], InputDir["MaxNumWindPerSite"],
-            SameTech=1)
+            SameTech=1, PrintName="Wind-Wind")
         
         IdxOvelap_WindWave, AreaOverlap_WindWave, AreaRef1Ref2_WindWave, MaxTurbinesRef1Ref2_WindWave, PercentageOverlap_WindWave=GetOverlaps_Idx_Area(
             InputDir["WindLatLong"], InputDir["WindResolutionKm"], InputDir["WindResolutionDegrees"], InputDir["MaxNumWindPerSite"],
             InputDir["WaveLatLong"], InputDir["WaveResolutionKm"], InputDir["WaveResolutionDegrees"], InputDir["MaxNumWavePerSite"],
-            SameTech=0)
+            SameTech=0,  PrintName="Wind-Wave")
         
         IdxOvelap_WindKite, AreaOverlap_WindKite, AreaRef1Ref2_WindKite, MaxTurbinesRef1Ref2_WindKite, PercentageOverlap_WindKite=GetOverlaps_Idx_Area(
             InputDir["WindLatLong"], InputDir["WindResolutionKm"], InputDir["WindResolutionDegrees"], InputDir["MaxNumWindPerSite"],
             InputDir["KiteLatLong"], InputDir["KiteResolutionKm"], InputDir["KiteResolutionDegrees"], InputDir["MaxNumKitePerSite"],
-            SameTech=0)
+            SameTech=0, PrintName="Wind-Kite")
         
         #Wind sites with some overlap
         IdxOvelap_UniqueWindIdx=np.unique(np.concatenate((IdxOverlap_WindWind,IdxOvelap_WindWave,IdxOvelap_WindKite))[:,0])
@@ -402,18 +407,18 @@ def SolvePortOpt_MaxGen_Model(PathWindDesigns, PathWaveDesigns, PathKiteDesigns,
         IdxOvelap_WaveWind, AreaOverlap_WaveWind, AreaRef1Ref2_WaveWind, MaxTurbinesRef1Ref2_WaveWind, PercentageOverlap_WaveWind=GetOverlaps_Idx_Area(
             InputDir["WaveLatLong"], InputDir["WaveResolutionKm"], InputDir["WaveResolutionDegrees"], InputDir["MaxNumWavePerSite"],
             InputDir["WindLatLong"], InputDir["WindResolutionKm"], InputDir["WindResolutionDegrees"], InputDir["MaxNumWindPerSite"],
-            SameTech=0)
+            SameTech=0, PrintName="Wave-Wind")
         
         
         IdxOverlap_WaveWave, AreaOverlap_WaveWave, AreaRef1Ref2_WaveWave, MaxTurbinesRef1Ref2_WaveWave, PercentageOverlap_WaveWave=GetOverlaps_Idx_Area(
             InputDir["WaveLatLong"], InputDir["WaveResolutionKm"], InputDir["WaveResolutionDegrees"], InputDir["MaxNumWavePerSite"],
             InputDir["WaveLatLong"], InputDir["WaveResolutionKm"], InputDir["WaveResolutionDegrees"], InputDir["MaxNumWavePerSite"],
-            SameTech=1)
+            SameTech=1, PrintName="Wave-Wave")
         
         IdxOverlap_WaveKite, AreaOverlap_WaveKite, AreaRef1Ref2_WaveKite, MaxTurbinesRef1Ref2_WaveKite, PercentageOverlap_WaveKite=GetOverlaps_Idx_Area(
             InputDir["WaveLatLong"], InputDir["WaveResolutionKm"], InputDir["WaveResolutionDegrees"], InputDir["MaxNumWavePerSite"],
             InputDir["KiteLatLong"], InputDir["KiteResolutionKm"], InputDir["KiteResolutionDegrees"], InputDir["MaxNumKitePerSite"],
-            SameTech=0)
+            SameTech=0, PrintName="Wave-Kite")
         
         #Wave sites with some overlap
         IdxOvelap_UniqueWaveIdx=np.unique(np.concatenate((IdxOvelap_WaveWind,IdxOverlap_WaveWave,IdxOverlap_WaveKite))[:,0])
@@ -455,17 +460,17 @@ def SolvePortOpt_MaxGen_Model(PathWindDesigns, PathWaveDesigns, PathKiteDesigns,
         IdxOvelap_KiteWind, AreaOverlap_KiteWind, AreaRef1Ref2_KiteWind, MaxTurbinesRef1Ref2_KiteWind, PercentageOverlap_KiteWind=GetOverlaps_Idx_Area(
             InputDir["KiteLatLong"], InputDir["KiteResolutionKm"], InputDir["KiteResolutionDegrees"], InputDir["MaxNumKitePerSite"],
             InputDir["WindLatLong"], InputDir["WindResolutionKm"], InputDir["WindResolutionDegrees"], InputDir["MaxNumWindPerSite"],
-            SameTech=0)
+            SameTech=0, PrintName="Kite-Wind")
         
         IdxOvelap_KiteWave, AreaOverlap_KiteWave, AreaRef1Ref2_KiteWave, MaxTurbinesRef1Ref2_KiteWave, PercentageOverlap_KiteWave=GetOverlaps_Idx_Area(
             InputDir["KiteLatLong"], InputDir["KiteResolutionKm"], InputDir["KiteResolutionDegrees"], InputDir["MaxNumKitePerSite"],
             InputDir["WaveLatLong"], InputDir["WaveResolutionKm"], InputDir["WaveResolutionDegrees"], InputDir["MaxNumWavePerSite"],
-            SameTech=0)
+            SameTech=0, PrintName="Kite-Wave")
         
         IdxOverlap_KiteKite, AreaOverlap_KiteKite, AreaRef1Ref2_KiteKite, MaxTurbinesRef1Ref2_KiteKite, PercentageOverlap_KiteKite=GetOverlaps_Idx_Area(
             InputDir["KiteLatLong"], InputDir["KiteResolutionKm"], InputDir["KiteResolutionDegrees"], InputDir["MaxNumKitePerSite"],
             InputDir["KiteLatLong"], InputDir["KiteResolutionKm"], InputDir["KiteResolutionDegrees"], InputDir["MaxNumKitePerSite"],
-            SameTech=1)
+            SameTech=1, PrintName="Kite-Kite")
         
         #Kite sites with some overlap
         IdxOvelap_UniqueKiteIdx=np.unique(np.concatenate((IdxOvelap_KiteWind,IdxOvelap_KiteWave,IdxOverlap_KiteKite))[:,0])
@@ -559,13 +564,14 @@ def SolvePortOpt_MaxGen_LCOE_Iterator(PathWindDesigns, PathWaveDesigns, PathKite
         Cost_Transmission=sum(Model.s[i]*InputDir["AnnualizedCostTransmission"][i] for i in range(InputDir["NumTransSites"]))
         
         TotalCost=Cost_Wind+Cost_Wave+Cost_Kite+Cost_Transmission #M$
-        TotalCost=TotalCost*10**6 #USD
+        TotalCost=TotalCost*10**6 #USD (Convert from M$ to USD)
 
 
         return TotalCost<=LCOE_Max*MWhYear  
 
     SaveFeasibility, Save_LCOETarget, Save_LCOE_Achieved, SaveTotalMWAvg = list(), list(), list(), list()
     Save_Y_Wind, Save_Y_Wave, Save_Y_Kite, Save_W_Wind, Save_W_Wave, Save_W_Kite, Save_s, Save_Delta = list(), list(), list(), list(), list(), list(), list(), list()
+    Save_TotalMWAvgWind, Save_TotalMWAvgWave, Save_TotalMWAvgKite, Save_totalMWAvgCurtailment = list(), list(), list(), list()
 
     LowestLCOE=10**10
     for LCOETarget in tqdm(InputDir["LCOE_RANGE"]):
@@ -634,6 +640,10 @@ def SolvePortOpt_MaxGen_LCOE_Iterator(PathWindDesigns, PathWaveDesigns, PathKite
                     
                     Save_LCOE_Achieved.append(CurrentLCOE)
                     SaveTotalMWAvg.append(MWhYear/(24*365.25))
+                    Save_TotalMWAvgWind.append(EGWind)
+                    Save_TotalMWAvgWave.append(EGWave)
+                    Save_TotalMWAvgKite.append(EGKite)
+                    Save_totalMWAvgCurtailment.append(TotalCurtailment)
                     
                     
                     print("LCOE OPT: %.2f,\n MW Wind: %.2f,\nMW Wave: %.2f,\nMW Kite: %.2f,\nMW Curtailment: %.2f,\nMW Total: %.2f\n" % (CurrentLCOE,EGWind,EGWave,EGKite,TotalCurtailment,EGWind+EGWave+EGKite-TotalCurtailment))
@@ -656,6 +666,10 @@ def SolvePortOpt_MaxGen_LCOE_Iterator(PathWindDesigns, PathWaveDesigns, PathKite
                     Save_W_Kite.append(None)
                     Save_s.append(None)
                     Save_Delta.append(None)
+                    Save_TotalMWAvgWind.append(None)
+                    Save_TotalMWAvgWave.append(None)
+                    Save_TotalMWAvgKite.append(None)
+                    Save_totalMWAvgCurtailment.append(None)
                     break
 
     #Save Results
@@ -681,6 +695,10 @@ def SolvePortOpt_MaxGen_LCOE_Iterator(PathWindDesigns, PathWaveDesigns, PathKite
                 Save_LCOETarget=Save_LCOETarget,
                 Save_LCOE_Achieved=Save_LCOE_Achieved,
                 SaveTotalMWAvg=SaveTotalMWAvg,
+                Save_TotalMWAvgWind=Save_TotalMWAvgWind,
+                Save_TotalMWAvgWave=Save_TotalMWAvgWave,
+                Save_TotalMWAvgKite=Save_TotalMWAvgKite,
+                Save_totalMWAvgCurtailment=Save_totalMWAvgCurtailment,
                 
                 Save_Y_Wind=Save_Y_Wind,
                 Save_Y_Wave=Save_Y_Wave,
@@ -690,5 +708,4 @@ def SolvePortOpt_MaxGen_LCOE_Iterator(PathWindDesigns, PathWaveDesigns, PathKite
                 Save_W_Kite=Save_W_Kite,
                 Save_s=Save_s,
                 Save_Delta=Save_Delta,
-                
                 )
