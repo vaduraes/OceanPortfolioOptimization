@@ -444,12 +444,12 @@ def PlotEfficientFrontier(SolutionPaths, Legend, Title, linestyle=None,ColorList
 def PlotPowerTechDistribution(SolutionPath, SavePath=None):
 
     Data=np.load(SolutionPath,allow_pickle=True)
-    Save_TotalMWAvgWind=Data["Save_TotalMWAvgWind"]
-    Save_TotalMWAvgWave=Data["Save_TotalMWAvgWave"]
-    Save_TotalMWAvgKite=Data["Save_TotalMWAvgKite"]
-    Save_totalMWAvgCurtailment=Data["Save_totalMWAvgCurtailment"]
-    SaveTotalMWAvg=Data["SaveTotalMWAvg"]
-    Save_LCOE_Achieved=Data["Save_LCOE_Achieved"]
+    Save_TotalMWAvgWind=np.array(Data["Save_TotalMWAvgWind"],dtype=float)
+    Save_TotalMWAvgWave=np.array(Data["Save_TotalMWAvgWave"],dtype=float)
+    Save_TotalMWAvgKite=np.array(Data["Save_TotalMWAvgKite"],dtype=float)
+    Save_totalMWAvgCurtailment=np.array(Data["Save_totalMWAvgCurtailment"],dtype=float)
+    SaveTotalMWAvg=np.array(Data["SaveTotalMWAvg"],dtype=float)
+    Save_LCOE_Achieved=np.array(Data["Save_LCOE_Achieved"],dtype=float)
 
 
     # Colors for each energy source
