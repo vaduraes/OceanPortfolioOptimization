@@ -38,3 +38,5 @@ Wind_AE/WindEnergyNREL_100m_Haliade150_6MW.npz
 Organize/
 PlotWind_Wave.ipynb
 PortOptimization.ipynb
+OutputData/OceanCurrent/CheckOCGeneration.ipynb
+InputData/Wave/EVA_Wave.pptx

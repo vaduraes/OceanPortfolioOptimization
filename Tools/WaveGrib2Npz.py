@@ -147,6 +147,8 @@ def ConvertGrib2NPZ_WWIII(FromDate, ToDate, SavePath=None, LatMinMax=(33, 37), L
    Hs=Hs[SecondIdxFilter1,:]
    Tp=Tp[SecondIdxFilter1,:]
    LatLong=LatLong[SecondIdxFilter1,:]
+   Depth=Depth[SecondIdxFilter1]
+   DistanceShore=DistanceShore[SecondIdxFilter1]
    
    #Fill the missing values with the value in the previous 3h
    #We used this simple procedure because there are very few missing values
